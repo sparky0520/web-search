@@ -148,6 +148,7 @@ export class LlmClient {
         }
 
         // If not retryable or retry already failed, check fallback
+        console.error('[Primary LLM error]:', err);
         if (!isFallback && this.fallbackClient && config.LLM_FALLBACK_MODEL) {
           if (emit) {
             emit({

@@ -50,63 +50,75 @@ export async function runAgentLoop(
       messages: activeMessages,
     };
 
-    if (!budgetExhausted) {
+    if (budgetExhausted) {
+      activeMessages.push({
+        role: 'user',
+        content: 'Search budget completed. Do not call any tools. Please synthesize your final answer using the search results above.',
+      });
+    } else {
       streamPayload.tools = [WEB_SEARCH_TOOL_DEFINITION];
       streamPayload.tool_choice = 'auto';
     }
 
-    let streamResult;
-    try {
-      streamResult = await client.createStream(streamPayload, emit, options.signal);
-    } catch (err: unknown) {
-      const errMsg = err instanceof Error ? err.message : String(err);
-      if (errMsg.includes('Tool choice is none') || errMsg.includes('model called a tool')) {
-        activeMessages.push({
-          role: 'user',
-          content: 'Search budget completed. Do not call any tools. Please synthesize your final answer based on the search results gathered above.',
-        });
-        streamResult = await client.createStream({ messages: activeMessages }, emit, options.signal);
-      } else {
-        throw err;
-      }
-    }
-    const { stream, modelUsed } = streamResult;
+    const { stream, modelUsed } = await client.createStream(streamPayload, emit, options.signal);
     modelUsedFinal = modelUsed;
 
     let roundText = '';
     const toolCallDeltas: Map<number, { id: string; name: string; arguments: string }> = new Map();
 
-    for await (const chunk of stream) {
-      if (options.signal?.aborted) {
-        throw new Error('Aborted by client');
-      }
-
-      const choice = chunk.choices[0];
-      if (!choice) continue;
-
-      const delta = choice.delta;
-
-      // Track first token timing
-      if (delta.content && timings.firstTokenMs === undefined) {
-        timings.firstTokenMs = Date.now() - startTime;
-      }
-
-      // Stream text delta
-      if (delta.content) {
-        roundText += delta.content;
-        emit({ type: 'delta', text: delta.content });
-      }
-
-      // Accumulate tool calls
-      if (delta.tool_calls) {
-        for (const tc of delta.tool_calls) {
-          const idx = tc.index;
-          const existing = toolCallDeltas.get(idx) || { id: '', name: '', arguments: '' };
-          if (tc.id) existing.id = tc.id;
-          if (tc.function?.name) existing.name = tc.function.name;
-          if (tc.function?.arguments) existing.arguments += tc.function.arguments;
-          toolCallDeltas.set(idx, existing);
+    try {
+      for await (const chunk of stream) {
+        if (options.signal?.aborted) {
+          throw new Error('Aborted by client');
         }
+
+        const choice = chunk.choices[0];
+        if (!choice) continue;
+
+        const delta = choice.delta;
+
+        // Track first token timing
+        if (delta.content && timings.firstTokenMs === undefined) {
+          timings.firstTokenMs = Date.now() - startTime;
+        }
+
+        // Stream text delta
+        if (delta.content) {
+          roundText += delta.content;
+          emit({ type: 'delta', text: delta.content });
+        }
+
+        // Accumulate tool calls
+        if (delta.tool_calls) {
+          for (const tc of delta.tool_calls) {
+            const idx = tc.index;
+            const existing = toolCallDeltas.get(idx) || { id: '', name: '', arguments: '' };
+            if (tc.id) existing.id = tc.id;
+            if (tc.function?.name) existing.name = tc.function.name;
+            if (tc.function?.arguments) existing.arguments += tc.function.arguments;
+            toolCallDeltas.set(idx, existing);
+          }
+        }
+      }
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      if (errMsg.includes('Tool choice is none') || errMsg.includes('model called a tool')) {
+        activeMessages.push({
+          role: 'user',
+          content: 'Search budget completed. Do not call any tools. Please synthesize your final answer using the search results above.',
+        });
+        const retryRes = await client.createStream({ messages: activeMessages }, emit, options.signal);
+        modelUsedFinal = retryRes.modelUsed;
+        for await (const chunk of retryRes.stream) {
+          const choice = chunk.choices[0];
+          if (!choice) continue;
+          if (choice.delta?.content) {
+            roundText += choice.delta.content;
+            emit({ type: 'delta', text: choice.delta.content });
+          }
+        }
+      } else {
+        throw err;
       }
     }
 
