@@ -48,3 +48,4 @@ describe('Search Budget Enforcement (§7 & §8)', () => {
     expect(result.output).toContain('budget exhausted');
   });
 });
+

@@ -424,3 +424,4 @@ function handleSSEEvent(type, data, bodyEl) {
 
 // Initial session load
 loadSessions();
+

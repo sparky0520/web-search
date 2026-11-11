@@ -26,3 +26,4 @@ export function appendTrace(record: TraceRecord, dataDir: string = config.DATA_D
     console.warn('Could not write trace record:', err);
   }
 }
+

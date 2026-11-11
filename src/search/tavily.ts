@@ -88,3 +88,4 @@ export class TavilySearchProvider implements SearchProvider {
 }
 
 export const defaultSearchProvider = new TavilySearchProvider();
+

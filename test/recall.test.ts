@@ -82,3 +82,4 @@ describe('Memory Recall & BM25-lite (§6)', () => {
     expect(recall.block).toContain('then-sources: (a1) https://aws.amazon.com/rds (a2) https://neon.tech');
   });
 });
+

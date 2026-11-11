@@ -16,3 +16,4 @@ export interface RawSearchResult {
 export interface SearchProvider {
   search(params: SingleSearchQuery): Promise<RawSearchResult[]>;
 }
+

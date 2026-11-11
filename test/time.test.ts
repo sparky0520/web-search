@@ -82,3 +82,4 @@ describe('Time Resolver (§5 Semantics)', () => {
     expect(p?.primary.start.toISODate()).toBe('2026-11-10');
   });
 });
+

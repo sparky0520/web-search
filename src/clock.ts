@@ -36,3 +36,4 @@ export function formatDisplayDate(dt: DateTime): string {
 export function toUtcIso(dt: DateTime): string {
   return dt.toUTC().toISO() || new Date().toISOString();
 }
+

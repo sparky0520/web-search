@@ -31,3 +31,4 @@ Open `http://localhost:3000` (or `http://localhost:3000/?debug=1` for the live t
 - `npm run typecheck`: Run TypeScript typechecking
 - `npm run models`: Scan OpenRouter for free, tool-capable models
 - `npm run eval`: Run deterministic scenario evaluation suite
+

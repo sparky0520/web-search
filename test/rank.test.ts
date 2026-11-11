@@ -50,3 +50,4 @@ describe('Search Ranking & Deduplication (§7)', () => {
     expect(ranked.map((r) => r.n)).toEqual([1, 2, 3]);
   });
 });
+

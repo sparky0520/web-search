@@ -162,8 +162,8 @@ export function assembleRecall(
     }
   }
 
-  // If no candidate days matched or no candidate days specified, use all sessions as pool for cue recall
-  if (candidates.length === 0 && hasCues) {
+  // If no candidate days were specified in the query, use all sessions as pool for general cue recall
+  if (timeRes.candidateDays.length === 0 && hasCues) {
     candidates = [...allSessions];
   }
 
@@ -250,3 +250,4 @@ export function assembleRecall(
   lines.push('</recall>');
   return { status: 'matched', block: lines.join('\n'), matchedSessions: matched };
 }
+

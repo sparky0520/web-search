@@ -35,3 +35,4 @@ export type AgentEvent =
   | { type: 'error'; code: string; message: string };
 
 export type EventEmitter = (event: AgentEvent) => void;
+

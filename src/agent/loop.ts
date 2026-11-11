@@ -95,6 +95,26 @@ export async function runAgentLoop(
       }
     }
 
+    // Text-based tool call fallback for models emitting XML-like calls in text (e.g. Nemotron/Llama)
+    if (toolCallDeltas.size === 0 && roundText.includes('<tool_call>') && roundText.includes('web_search')) {
+      const paramMatch =
+        roundText.match(/<parameter=searches>\s*([\s\S]*?)\s*<\/parameter>/i) ||
+        roundText.match(/<tool_call>[\s\S]*?({[\s\S]*?})[\s\S]*?<\/tool_call>/i);
+      if (paramMatch) {
+        try {
+          const raw = paramMatch[1].trim();
+          let parsedObj = raw.startsWith('[') ? { searches: JSON.parse(raw) } : JSON.parse(raw);
+          toolCallDeltas.set(0, {
+            id: `call_${Date.now()}`,
+            name: 'web_search',
+            arguments: JSON.stringify(parsedObj),
+          });
+        } catch {
+          // Ignore invalid parse
+        }
+      }
+    }
+
     // Check if this round produced tool calls
     if (toolCallDeltas.size > 0) {
       // Discard any preamble text produced before tool calls
@@ -253,3 +273,4 @@ export async function runAgentLoop(
     modelUsed: modelUsedFinal,
   };
 }
+

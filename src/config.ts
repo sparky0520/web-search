@@ -63,3 +63,4 @@ function parseConfig(): Config {
 }
 
 export const config = parseConfig();
+
