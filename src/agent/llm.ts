@@ -62,11 +62,14 @@ export class LlmClient {
   ): Promise<{ stream: AsyncIterable<OpenAI.Chat.ChatCompletionChunk>; modelUsed: string }> {
     await globalTokenBucket.acquire();
 
+    let finalModel = config.LLM_MODEL;
+
     const callWithRetry = async (
       client: OpenAI,
       model: string,
       isFallback: boolean = false
     ): Promise<AsyncIterable<OpenAI.Chat.ChatCompletionChunk>> => {
+      finalModel = model;
       try {
         const payload: OpenAI.Chat.ChatCompletionCreateParamsStreaming = {
           ...params,
@@ -84,6 +87,18 @@ export class LlmClient {
         // Differentiate credit issue (402)
         if (status === 402) {
           throw new Error('LLM credit limit reached (HTTP 402). Please add credits to your provider account.');
+        }
+
+        // Fast-failover on daily quota cap if fallback is configured
+        const isDailyCap = error.message?.includes('free-models-per-day') || error.message?.includes('daily');
+        if (isDailyCap && !isFallback && this.fallbackClient && config.LLM_FALLBACK_MODEL) {
+          if (emit) {
+            emit({
+              type: 'status',
+              text: `Primary daily quota reached. Switching to fallback (${config.LLM_FALLBACK_MODEL})...`,
+            });
+          }
+          return await callWithRetry(this.fallbackClient, config.LLM_FALLBACK_MODEL, true);
         }
 
         // Retry once on 429, 5xx, or timeout
@@ -152,7 +167,7 @@ export class LlmClient {
     };
 
     const stream = await callWithRetry(this.primaryClient, config.LLM_MODEL, false);
-    return { stream, modelUsed: config.LLM_MODEL };
+    return { stream, modelUsed: finalModel };
   }
 }
 
