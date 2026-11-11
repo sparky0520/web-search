@@ -3,4 +3,5 @@ node_modules/
 data/
 notes/
 dist/
+test_data*/
 .DS_Store
