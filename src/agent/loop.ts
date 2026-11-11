@@ -50,7 +50,7 @@ export async function runAgentLoop(
     const { stream, modelUsed } = await client.createStream(
       {
         messages: activeMessages,
-        tools: budgetExhausted ? undefined : [WEB_SEARCH_TOOL_DEFINITION],
+        tools: [WEB_SEARCH_TOOL_DEFINITION],
         tool_choice: toolChoice,
       },
       emit,
@@ -112,6 +112,18 @@ export async function runAgentLoop(
         } catch {
           // Ignore invalid parse
         }
+      }
+    }
+
+    // If search budget was already exhausted, ignore any attempted tool calls
+    if (budgetExhausted && toolCallDeltas.size > 0) {
+      toolCallDeltas.clear();
+      if (!roundText.trim()) {
+        activeMessages.push({
+          role: 'user',
+          content: 'Search budget exhausted. Please synthesize your final answer using the search results gathered above.',
+        });
+        continue;
       }
     }
 
