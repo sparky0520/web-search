@@ -65,12 +65,20 @@ toggleSidebarBtn.addEventListener('click', () => {
 });
 
 // Load Sessions in Left Rail
-async function loadSessions() {
+async function loadSessions(initial = false) {
   try {
     const res = await fetch('/api/sessions');
     if (!res.ok) return;
     const data = await res.json();
     renderSessionList(data.sessions || []);
+
+    // Restore active session on page refresh if saved in localStorage
+    if (initial && !currentSessionId) {
+      const savedId = localStorage.getItem('active_session_id');
+      if (savedId && data.sessions?.some((s) => s.id === savedId)) {
+        selectSession(savedId);
+      }
+    }
   } catch (err) {
     console.warn('Failed to load sessions:', err);
   }
@@ -131,6 +139,7 @@ async function selectSession(id) {
     if (!res.ok) return;
     const session = await res.json();
     currentSessionId = session.id;
+    localStorage.setItem('active_session_id', session.id);
     currentChatTitleEl.textContent = session.title;
     sidebarEl.classList.remove('open');
 
@@ -150,6 +159,7 @@ async function selectSession(id) {
 
 newChatBtn.addEventListener('click', () => {
   currentSessionId = null;
+  localStorage.removeItem('active_session_id');
   currentChatTitleEl.textContent = 'New Conversation';
   messagesContainerEl.innerHTML = '';
   welcomeCardEl.style.display = 'block';
@@ -426,6 +436,7 @@ function handleSSEEvent(type, data, bodyEl) {
 
     case 'done':
       currentSessionId = data.sessionId;
+      localStorage.setItem('active_session_id', data.sessionId);
       // Append footer to completed assistant message
       const footerEl = document.createElement('div');
       footerEl.className = 'message-footer';
@@ -461,5 +472,5 @@ function handleSSEEvent(type, data, bodyEl) {
 }
 
 // Initial session load
-loadSessions();
+loadSessions(true);
 

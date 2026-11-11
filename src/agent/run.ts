@@ -43,7 +43,7 @@ export async function runTurn(input: RunTurnInput, emit: EventEmitter): Promise<
   // 1. Context Assembly (< 20ms)
   const contextStart = Date.now();
   const timeRes = resolve(input.message, now, tz);
-  const recallRes = assembleRecall(input.message, timeRes, now, tz, store, uid);
+  const recallRes = assembleRecall(input.message, timeRes, now, tz, store);
   const contextBuildMs = Date.now() - contextStart;
 
   // Immediate first event within ~150 ms

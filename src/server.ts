@@ -1,4 +1,4 @@
-import { serve } from '@hono/node-server';
+ import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
 import { readFileSync, existsSync } from 'node:fs';
@@ -42,10 +42,9 @@ app.get('/api/health', (c) => {
   return c.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// List sessions for user
+// List sessions (left rail archive for users & reviewers)
 app.get('/api/sessions', (c) => {
-  const uid = c.get('uid') as string;
-  const sessions = sessionStore.listSessions(uid);
+  const sessions = sessionStore.listSessions();
   return c.json({ sessions });
 });
 
