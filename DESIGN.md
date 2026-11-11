@@ -45,3 +45,4 @@ Measured on OpenRouter free tier (`nvidia/nemotron-3.5-lightning:free`) with Tav
 - **Multi-provider search fusion**: Reciprocal Rank Fusion (RRF) across Tavily, Brave, and SearXNG.
 - **Calibrated LLM judge**: Offline scoring on answer correctness, tone, and citation density.
 - **Multi-user authentication**: Secure user sessions with standard OAuth/JWT.
+

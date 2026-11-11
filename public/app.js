@@ -168,10 +168,28 @@ document.querySelectorAll('.sample-chip').forEach((chip) => {
   });
 });
 
-// Input Keyboard handler (Enter sends, Shift+Enter adds line)
+// Input Keyboard handler (Enter sends, Shift+Enter adds line) & Auto-resize
+chatInputEl.addEventListener('input', () => {
+  chatInputEl.style.height = 'auto';
+  chatInputEl.style.height = Math.min(chatInputEl.scrollHeight, 180) + 'px';
+});
+
+// Escape key closes open drawers
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    if (sidebarEl.classList.contains('open')) {
+      sidebarEl.classList.remove('open');
+    }
+    if (debugPanelEl && debugPanelEl.style.display !== 'none' && !isDebugMode) {
+      debugPanelEl.style.display = 'none';
+    }
+  }
+});
+
 chatInputEl.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && !e.shiftKey) {
     e.preventDefault();
+    chatInputEl.style.height = 'auto';
     sendMessage();
   }
 });
@@ -213,6 +231,24 @@ function appendRenderedMessage(role, content, sources = [], ts = null) {
   }
 
   bodyEl.innerHTML = formatMarkdownWithCitations(content, sourcesMap);
+
+  // Add copy button to pre code blocks
+  bodyEl.querySelectorAll('pre').forEach((pre) => {
+    const copyBtn = document.createElement('button');
+    copyBtn.className = 'code-copy-btn';
+    copyBtn.textContent = 'Copy';
+    copyBtn.title = 'Copy code';
+    copyBtn.onclick = () => {
+      const code = pre.querySelector('code')?.innerText || pre.innerText;
+      navigator.clipboard.writeText(code).then(() => {
+        copyBtn.textContent = 'Copied!';
+        setTimeout(() => (copyBtn.textContent = 'Copy'), 1500);
+      });
+    };
+    pre.style.position = 'relative';
+    pre.appendChild(copyBtn);
+  });
+
   msgEl.appendChild(bodyEl);
 
   if (role === 'assistant') {
