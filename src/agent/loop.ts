@@ -45,17 +45,32 @@ export async function runAgentLoop(
 
     // Determine whether web_search tool is offered
     const budgetExhausted = searchRoundsCount >= 2 || totalSearchesCount >= 10;
-    const toolChoice = budgetExhausted ? 'none' : 'auto';
 
-    const { stream, modelUsed } = await client.createStream(
-      {
-        messages: activeMessages,
-        tools: [WEB_SEARCH_TOOL_DEFINITION],
-        tool_choice: toolChoice,
-      },
-      emit,
-      options.signal
-    );
+    const streamPayload: Omit<OpenAI.Chat.ChatCompletionCreateParamsStreaming, 'model' | 'stream'> = {
+      messages: activeMessages,
+    };
+
+    if (!budgetExhausted) {
+      streamPayload.tools = [WEB_SEARCH_TOOL_DEFINITION];
+      streamPayload.tool_choice = 'auto';
+    }
+
+    let streamResult;
+    try {
+      streamResult = await client.createStream(streamPayload, emit, options.signal);
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      if (errMsg.includes('Tool choice is none') || errMsg.includes('model called a tool')) {
+        activeMessages.push({
+          role: 'user',
+          content: 'Search budget completed. Do not call any tools. Please synthesize your final answer based on the search results gathered above.',
+        });
+        streamResult = await client.createStream({ messages: activeMessages }, emit, options.signal);
+      } else {
+        throw err;
+      }
+    }
+    const { stream, modelUsed } = streamResult;
     modelUsedFinal = modelUsed;
 
     let roundText = '';
