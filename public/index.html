@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Minimi Web Search Chat Agent</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/vendor/marked.js"></script>
+  <script src="/vendor/purify.js"></script>
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Left Rail: Past Chats -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <h2>Archive</h2>
+        <button id="new-chat-btn" class="btn btn-primary" title="Start a new chat">+ New Chat</button>
+      </div>
+      <div class="sidebar-content" id="session-list" role="navigation" aria-label="Past conversations">
+        <!-- Rendered dynamically grouped by date -->
+      </div>
+    </aside>
+
+    <!-- Main Chat Workspace -->
+    <main class="chat-main">
+      <header class="chat-header">
+        <button id="toggle-sidebar-btn" class="btn-icon" aria-label="Toggle sidebar">☰</button>
+        <div class="chat-title-info">
+          <h1 id="current-chat-title">New Conversation</h1>
+          <span id="current-clock" class="clock-badge"></span>
+        </div>
+      </header>
+
+      <!-- Message History Container -->
+      <section class="messages-container" id="messages-container" role="log" aria-live="polite">
+        <div class="welcome-card" id="welcome-card">
+          <h3>Web-Search Research Agent</h3>
+          <p>Autonomous research agent with single-tool batched search, temporal reasoning, and historical recall.</p>
+          <div class="sample-prompts">
+            <button class="sample-chip" data-prompt="On Monday we shortlisted 5 CRM tools for a 20-person sales team. Has any of them changed pricing or shipped something big since?">CRM shortlist update</button>
+            <button class="sample-chip" data-prompt="Last Tuesday I asked you about Postgres hosting. Has any pricing changed since then?">Postgres hosting pricing</button>
+            <button class="sample-chip" data-prompt="What is the difference between a B-tree and an LSM tree?">B-tree vs LSM tree (stable)</button>
+            <button class="sample-chip" data-prompt="What is the latest Node.js LTS version?">Latest Node.js LTS</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Live Turn Status & Active Sources -->
+      <div class="turn-status-container" id="turn-status-container" style="display: none;">
+        <div class="status-bar" id="status-bar" aria-live="assertive">
+          <span class="spinner" id="turn-spinner"></span>
+          <span class="status-text" id="status-text">Thinking...</span>
+          <button id="stop-btn" class="btn btn-secondary btn-sm" title="Stop generating">Stop</button>
+        </div>
+        <div class="live-sources-tray" id="live-sources-tray"></div>
+      </div>
+
+      <!-- Input Area -->
+      <footer class="chat-footer">
+        <form id="chat-form" class="chat-input-form">
+          <textarea
+            id="chat-input"
+            placeholder="Ask anything or check changes since a past date... (Enter to send, Shift+Enter for new line)"
+            rows="2"
+            required
+            aria-label="Message input"
+          ></textarea>
+          <button type="submit" id="send-btn" class="btn btn-primary send-btn" aria-label="Send message">Send</button>
+        </form>
+      </footer>
+    </main>
+
+    <!-- Debug Panel (?debug=1) -->
+    <aside class="debug-panel" id="debug-panel" style="display: none;">
+      <div class="debug-header">
+        <h3>Live Trace</h3>
+        <button id="close-debug-btn" class="btn-icon">✕</button>
+      </div>
+      <div class="debug-content" id="debug-content">
+        <p class="muted">No trace events yet.</p>
+      </div>
+    </aside>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>
