@@ -4,4 +4,5 @@ data/
 notes/
 dist/
 test_data*/
+data_eval_temp*/
 .DS_Store
