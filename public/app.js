@@ -454,6 +454,8 @@ function handleSSEEvent(type, data, bodyEl) {
 
     case 'error':
       statusTextEl.textContent = `Error: ${data.message}`;
+      bodyEl.innerHTML = `<div class="error-bubble" style="padding: 12px; background: var(--bg-tertiary); border-left: 4px solid var(--error-color); border-radius: 6px; margin: 8px 0;"><h4 style="color: var(--error-color); margin-bottom: 4px;">⚠️ Provider Error</h4><p style="font-size: 0.85rem; color: var(--text-primary);">${data.message}</p></div>`;
+      messagesContainerEl.scrollTop = messagesContainerEl.scrollHeight;
       break;
   }
 }
