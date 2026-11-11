@@ -1,4 +1,4 @@
-import { DateTime } from 'luxon';
+import { DateTime, WeekdayNumbers } from 'luxon';
 import * as chrono from 'chrono-node';
 
 export type ResolvedKind = 'day' | 'range' | 'since';
@@ -28,7 +28,7 @@ export interface TimeResolutionResult {
   sinceDate?: string;        // Earliest or most relevant YYYY-MM-DD for search
 }
 
-const WEEKDAY_NAMES: Record<string, number> = {
+const WEEKDAY_NAMES: Record<string, WeekdayNumbers> = {
   monday: 1, mon: 1,
   tuesday: 2, tue: 2, tues: 2,
   wednesday: 3, wed: 3,
