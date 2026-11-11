@@ -16,8 +16,8 @@ export interface RecallResult {
 export function hasPastDiscourseIntent(query: string): boolean {
   const lower = query.toLowerCase();
 
-  // 1. First-person past action verbs (e.g. "I asked", "we shortlisted", "I told you")
-  if (/\b(i|we)\s+(asked|shortlisted|discussed|mentioned|talked|told|said|checked|searched|wanted|inquired|chatted)\b/i.test(lower)) {
+  // 1. First-person past action verbs with optional adverb (e.g. "I asked", "we last talked", "I previously told you")
+  if (/\b(i|we)(\s+\w+)?\s+(ask|asked|shortlist|shortlisted|discuss|discussed|mention|mentioned|talk|talked|tell|told|say|said|check|checked|chat|chatted)\b/i.test(lower)) {
     return true;
   }
 
@@ -26,8 +26,8 @@ export function hasPastDiscourseIntent(query: string): boolean {
     return true;
   }
 
-  // 3. Discourse memory inquiries (e.g. "do you remember", "remember when", "did I ask", "what did I ask", "when did I")
-  if (/\b(do\s+you\s+remember|remember\s+when|did\s+(i|we)\s+(ask|talk|discuss|mention)|what\s+did\s+(i|we)\s+ask|when\s+did\s+(i|we)|what\s+was\s+(my|our))\b/i.test(lower)) {
+  // 3. Discourse memory inquiries (e.g. "do you remember", "remember when", "what did we last talk about", "when did I")
+  if (/\b(do\s+you\s+remember|remember\s+when|did\s+(i|we)(\s+\w+)?\s+(ask|talk|discuss|mention)|what\s+did\s+(i|we)(\s+\w+)?\s+(ask|talk|discuss|mention|say)|when\s+did\s+(i|we)|what\s+was\s+(my|our))\b/i.test(lower)) {
     return true;
   }
 
