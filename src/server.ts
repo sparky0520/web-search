@@ -122,7 +122,6 @@ app.post('/api/chat', async (c) => {
     // Run the agent turn asynchronously
     const turnPromise = (async () => {
       try {
-        console.log(`\n💬 [Chat] Processing message for session ${sessionId}: "${message.slice(0, 50)}..."`);
         await runTurn(
           {
             sessionId,
@@ -133,13 +132,9 @@ app.post('/api/chat', async (c) => {
           },
           emit
         );
-        console.log(`✅ [Chat] Turn completed successfully for session ${sessionId}`);
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
-        console.error(`❌ [Chat Error] Turn failed for session ${sessionId}:`, msg);
-        if (!eventQueue.some((e) => e.type === 'error')) {
-          emit({ type: 'error', code: 'TURN_ERROR', message: msg });
-        }
+        emit({ type: 'error', code: 'TURN_ERROR', message: msg });
       } finally {
         turnDone = true;
         notify();
