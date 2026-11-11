@@ -9,32 +9,35 @@ export interface RecallResult {
   matchedSessions: Session[];
 }
 
-const RECALL_CUES = [
-  'what did i ask',
-  'we shortlisted',
-  'last time',
-  'you told me',
-  'still correct',
-  'since then',
-  'do you remember',
-  'remember when',
-  'did i ask',
-  'earlier chat',
-  'previous chat',
-  'we discussed',
-  'i asked',
-  'how long since',
-  'another chat',
-  'other chat',
-  'in another chat',
-  'when did i',
-  'we talked',
-  'past chat',
-  'past conversation',
-  'my question',
-  'earlier question',
-  'my last question',
-];
+/**
+ * Detects whether a query refers to a past conversation using structural linguistic patterns
+ * rather than brittle hardcoded phrase lists.
+ */
+export function hasPastDiscourseIntent(query: string): boolean {
+  const lower = query.toLowerCase();
+
+  // 1. First-person past action verbs (e.g. "I asked", "we shortlisted", "I told you")
+  if (/\b(i|we)\s+(asked|shortlisted|discussed|mentioned|talked|told|said|checked|searched|wanted|inquired|chatted)\b/i.test(lower)) {
+    return true;
+  }
+
+  // 2. References to chat sessions (e.g. "in another chat", "previous conversation", "earlier session")
+  if (/\b(in\s+)?(another|previous|earlier|past|prior|last|our|other)\s+(chat|conversation|session|turn|message|thread|discussion)\b/i.test(lower)) {
+    return true;
+  }
+
+  // 3. Discourse memory inquiries (e.g. "do you remember", "remember when", "did I ask", "what did I ask", "when did I")
+  if (/\b(do\s+you\s+remember|remember\s+when|did\s+(i|we)\s+(ask|talk|discuss|mention)|what\s+did\s+(i|we)\s+ask|when\s+did\s+(i|we)|what\s+was\s+(my|our))\b/i.test(lower)) {
+    return true;
+  }
+
+  // 4. Temporal delta / state persistence (e.g. "how long since", "still correct", "still valid", "changed since")
+  if (/\b(how\s+long\s+since|still\s+(correct|valid|accurate|the\s+same|true|relevant)|changed\s+since(\s+then)?)\b/i.test(lower)) {
+    return true;
+  }
+
+  return false;
+}
 
 const STOP_WORDS = new Set([
   'a', 'an', 'and', 'are', 'as', 'at', 'be', 'by', 'for', 'from', 'has', 'he',
@@ -122,9 +125,27 @@ export function assembleRecall(
   }
   const lowerQuery = query.toLowerCase();
 
-  // Check if recall should trigger
-  const hasCues = RECALL_CUES.some((cue) => lowerQuery.includes(cue));
-  const shouldRecall = timeRes.hasPastReference || hasCues;
+  // Detect past discourse intent and calculate keyword relevance
+  const hasIntent = hasPastDiscourseIntent(query);
+  const queryTokens = tokenize(query);
+
+  let scoreMap = new Map<string, number>();
+  let topBM25Score = 0;
+  if (allSessions.length > 0 && queryTokens.length > 0) {
+    const docs = allSessions.map((s) => ({
+      id: s.id,
+      text: `${s.title} ${s.messages.map((m) => m.content).join(' ')}`,
+    }));
+    const scores = rankBM25Lite(queryTokens, docs);
+    scoreMap = new Map(scores.map((x) => [x.id, x.score]));
+    topBM25Score = Math.max(...scores.map((s) => s.score), 0);
+  }
+
+  // Trigger recall when:
+  // 1. Time resolver found past anchor ("last Tuesday", "since Monday", "3 Nov")
+  // 2. Query matches structural past discourse intent ("I asked", "how long since", "in another chat")
+  // 3. Or query content keywords have strong BM25 correlation with past conversations (score >= 2.0)
+  const shouldRecall = timeRes.hasPastReference || hasIntent || (topBM25Score >= 2.0 && queryTokens.length >= 2);
 
   // Build archive summary line e.g. "archive: 14 sessions, 2 Nov - 11 Nov"
   let archiveSummary = 'archive: 0 sessions';
@@ -178,22 +199,13 @@ export function assembleRecall(
     }
   }
 
-  // If no candidate days were specified in the query, use all sessions as pool for general cue recall
-  if (timeRes.candidateDays.length === 0 && hasCues) {
+  // If no candidate days were specified in the query, use all sessions as pool
+  if (timeRes.candidateDays.length === 0) {
     candidates = [...allSessions];
   }
 
   // 2. Rank candidates using BM25-lite keyword overlap on query tokens
-  const queryTokens = tokenize(query);
   if (queryTokens.length > 0 && candidates.length > 0) {
-    const docs = candidates.map((s) => ({
-      id: s.id,
-      text: `${s.title} ${s.messages.map((m) => m.content).join(' ')}`,
-    }));
-    const scores = rankBM25Lite(queryTokens, docs);
-    const scoreMap = new Map(scores.map((x) => [x.id, x.score]));
-
-    // If candidate days were ranked, preserve day order as primary weight, with score tiebreaker
     candidates.sort((a, b) => {
       const scoreA = scoreMap.get(a.id) || 0;
       const scoreB = scoreMap.get(b.id) || 0;
