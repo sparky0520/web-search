@@ -22,6 +22,18 @@ const RECALL_CUES = [
   'earlier chat',
   'previous chat',
   'we discussed',
+  'i asked',
+  'how long since',
+  'another chat',
+  'other chat',
+  'in another chat',
+  'when did i',
+  'we talked',
+  'past chat',
+  'past conversation',
+  'my question',
+  'earlier question',
+  'my last question',
 ];
 
 const STOP_WORDS = new Set([
@@ -101,9 +113,13 @@ export function assembleRecall(
   now: DateTime,
   tz: string,
   store: SessionStore,
-  uid?: string
+  uid?: string,
+  excludeSessionId?: string
 ): RecallResult {
-  const allSessions = store.getAllSessions(uid);
+  let allSessions = store.getAllSessions(uid);
+  if (excludeSessionId) {
+    allSessions = allSessions.filter((s) => s.id !== excludeSessionId);
+  }
   const lowerQuery = query.toLowerCase();
 
   // Check if recall should trigger
@@ -223,10 +239,25 @@ export function assembleRecall(
     const dateFormatted = sDt.toFormat('EEE d MMM yyyy HH:mm');
     lines.push(`--- session ${dateFormatted} · ${s.title} ---`);
 
-    // Extract first user question and last assistant answer
-    const userMsg = s.messages.find((m) => m.role === 'user');
-    const assistantMsgs = s.messages.filter((m) => m.role === 'assistant');
-    const lastAssistantMsg = assistantMsgs[assistantMsgs.length - 1];
+    // Extract the most relevant user question and assistant answer
+    let userMsg = s.messages.find((m) => m.role === 'user');
+    let lastAssistantMsg = s.messages.filter((m) => m.role === 'assistant').pop();
+
+    if (s.messages.length > 2 && queryTokens.length > 0) {
+      let maxOverlap = -1;
+      for (let i = 0; i < s.messages.length; i++) {
+        if (s.messages[i].role === 'user') {
+          const userTokens = tokenize(s.messages[i].content);
+          const overlap = userTokens.filter((t) => queryTokens.includes(t)).length;
+          if (overlap > maxOverlap) {
+            maxOverlap = overlap;
+            userMsg = s.messages[i];
+            const nextAss = s.messages.slice(i + 1).find((m) => m.role === 'assistant');
+            if (nextAss) lastAssistantMsg = nextAss;
+          }
+        }
+      }
+    }
 
     if (userMsg) {
       lines.push(`User: ${userMsg.content}`);
